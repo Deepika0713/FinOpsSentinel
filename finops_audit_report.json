@@ -1,0 +1,25 @@
+{
+  "project": "FinOpsSentinel",
+  "timestamp": "2026-07-21T09:41:07.913233Z",
+  "dry_run_enabled": true,
+  "total_orphaned_assets": 2,
+  "total_estimated_monthly_waste_usd": 22.8,
+  "findings": [
+    {
+      "resource_name": "unused-temp-disk-01",
+      "type": "Unattached Managed Disk",
+      "monthly_waste_usd": 19.2,
+      "ai_risk_level": "LOW",
+      "recommended_action": "TAG_FOR_DELETION",
+      "ai_reasoning": "Resource has been unattached for >30 days with no active VM assignment."
+    },
+    {
+      "resource_name": "orphan-ip-prod",
+      "type": "Unassigned Public IP",
+      "monthly_waste_usd": 3.6,
+      "ai_risk_level": "MEDIUM",
+      "recommended_action": "FLAG_FOR_REVIEW",
+      "ai_reasoning": "Asset recently created. Requires human owner verification before removal."
+    }
+  ]
+}
