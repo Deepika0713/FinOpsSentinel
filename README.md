@@ -123,3 +123,6 @@ python main.py --mode audit --dry-run
 
 [ ] v2.0: Multi-Cloud extension (AWS EBS & GCP Persistent Disk support)
 DRY_RUN=True
+## 📄 License
+
+Distributed under the MIT License. See LICENSE for details.
