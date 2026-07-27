@@ -21,32 +21,21 @@
 ---
 
 ## 🏗️ Architecture Overview
-
+```
 ┌──────────────────────┐      ┌──────────────────────────┐
-
 │  Azure Subscription  │ ───► │  Azure Python SDK        │
-
 │  (Disks, IPs, NICs)  │      │  (Resource Discovery)    │
-
 └──────────────────────┘      └────────────┬─────────────┘
-
-│ Raw Metadata
-
-▼
-
-┌──────────────────────┐      ┌──────────────────────────┐
-
-│   FinOpsSentinel     │ ◄─── │  LLM Inference Engine    │
-
-│   Action Executor    │ ───► │  (Groq / Llama 3)        │
-
-└──────────┬───────────┘      └──────────────────────────┘
-
-│
-
-├─► 📄 Markdown Cost & Audit Reports
-
-└─► 🏷️ Resource Tagging / Safe Quarantine
+                                           │ Raw Metadata
+                                           ▼
+                                ┌──────────────────────┐      ┌──────────────────────────┐
+                                │   FinOpsSentinel     │ ◄─── │  LLM Inference Engine    │
+                                │   Action Executor    │ ───► │  (Groq / Llama 3)        │
+                                └──────────┬───────────┘      └──────────────────────────┘
+                                           │
+                                           ├─► 📄 Markdown Cost & Audit Reports
+                                           └─► 🏷️ Resource Tagging / Safe Quarantine
+```
 
 
 ## 🧰 Tech Stack & Tools
