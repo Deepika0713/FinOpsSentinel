@@ -1,25 +1,23 @@
 {
   "project": "FinOpsSentinel",
-  "timestamp": "2026-07-21T09:41:07.913233Z",
-  "dry_run_enabled": true,
+  "timestamp": "2026-07-27T07:25:41.805611Z",
+  "subscription_id": "3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e",
   "total_orphaned_assets": 2,
-  "total_estimated_monthly_waste_usd": 22.8,
-  "findings": [
+  "total_monthly_waste_usd": 5.2,
+  "audit_findings": [
     {
-      "resource_name": "unused-temp-disk-01",
-      "type": "Unattached Managed Disk",
-      "monthly_waste_usd": 19.2,
-      "ai_risk_level": "LOW",
+      "resource_name": "sentinel-orphan-disk-01",
+      "risk_level": "LOW",
       "recommended_action": "TAG_FOR_DELETION",
-      "ai_reasoning": "Resource has been unattached for >30 days with no active VM assignment."
+      "reasoning": "The unattached managed disk is less than 64GB and has no critical tags, posing a low risk. It can be safely tagged for deletion to avoid unnecessary costs.",
+      "estimated_savings_usd": 1.6
     },
     {
-      "resource_name": "orphan-ip-prod",
-      "type": "Unassigned Public IP",
-      "monthly_waste_usd": 3.6,
-      "ai_risk_level": "MEDIUM",
-      "recommended_action": "FLAG_FOR_REVIEW",
-      "ai_reasoning": "Asset recently created. Requires human owner verification before removal."
+      "resource_name": "sentinel-orphan-ip-01",
+      "risk_level": "LOW",
+      "recommended_action": "TAG_FOR_DELETION",
+      "reasoning": "The resource is an unassigned public IP with no indication of being production reserved, making it a low-risk candidate for deletion. Estimated monthly savings of $3.6 can be achieved by deleting this resource.",
+      "estimated_savings_usd": 3.6
     }
   ]
 }
