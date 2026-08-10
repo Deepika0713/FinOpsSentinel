@@ -4,21 +4,23 @@ import subprocess
 from ai_auditor import FinOpsAIAuditor
 from tools import ToolRegistry
 from guardrails import SafetyGuardrailInterceptor
+from reporter import FinOpsReporter
 
 def main():
-    parser = argparse.ArgumentParser(description="FinOpsSentinel: Autonomous Cloud AI Agent with Safety Guardrails")
+    parser = argparse.ArgumentParser(description="FinOpsSentinel: Autonomous Cloud AI Agent with Structured Reporting")
     parser.add_argument("--apply", action="store_true", help="Execute live remediation actions (default is dry-run mode)")
     args = parser.parse_args()
 
     dry_run_mode = not args.apply
+    mode_str = "DRY-RUN (SAFE)" if dry_run_mode else "LIVE APPLY"
 
     print("==================================================")
     print("🛡️  FinOpsSentinel: Autonomous Cloud AI Agent")
-    print(f"⚙️  Execution Mode : {'[DRY-RUN (SAFE)]' if dry_run_mode else '[LIVE APPLY]'}")
+    print(f"⚙️  Execution Mode : [{mode_str}]")
     print(f"🔒 Safety Guardrails: [ACTIVE - HITL ENABLED]")
     print("==================================================")
 
-    # Fetch Subscription ID
+    # Fetch Active Azure Subscription ID
     try:
         sub_info = subprocess.check_output("az account show", shell=True)
         subscription_id = json.loads(sub_info)["id"]
@@ -27,26 +29,27 @@ def main():
         print("❌ Could not fetch Azure subscription. Ensure 'az login' is active.")
         return
 
-    # Initialize AI Auditor, Tool Registry, and Safety Guardrails
+    # Initialize Modules
     auditor = FinOpsAIAuditor()
     registry = ToolRegistry(subscription_id=subscription_id, dry_run=dry_run_mode)
     guardrail = SafetyGuardrailInterceptor(dry_run=dry_run_mode)
+    reporter = FinOpsReporter()
 
     messages = []
     print("🤖 FinOpsSentinel Ready! Type your request (or 'exit' / 'quit' to stop).\n")
 
-    while True:
-        try:
+    try:
+        while True:
             user_input = input("👤 You > ").strip()
             if not user_input:
                 continue
             if user_input.lower() in ["exit", "quit", "q"]:
-                print("👋 Exiting FinOpsSentinel session.")
+                print("👋 Exiting session...")
                 break
 
             messages.append({"role": "user", "content": user_input})
 
-            # Process AI tool-calling loop
+            # AI tool-calling loop
             while True:
                 response_message = auditor.run_agent_step(messages)
 
@@ -67,23 +70,23 @@ def main():
                 
                 messages.append(msg_dict)
 
-                # Process requested tool calls
+                # Process tool calls
                 if response_message.tool_calls:
                     for tool_call in response_message.tool_calls:
                         func_name = tool_call.function.name
-                        args = json.loads(tool_call.function.arguments)
+                        call_args = json.loads(tool_call.function.arguments)
 
-                        # 🛑 STEP 1: SAFETY GUARDRAIL & HITL INTERCEPTION
-                        is_allowed, status_msg = guardrail.validate_and_intercept(func_name, args)
+                        # Step 1: Safety Check & HITL
+                        is_allowed, status_msg = guardrail.validate_and_intercept(func_name, call_args)
 
                         if not is_allowed:
-                            # Return intercept message directly to LLM context
                             result = {"status": "blocked", "reason": status_msg}
+                            reporter.log_action(func_name, call_args, result, status="BLOCKED")
                         else:
-                            # 🚀 STEP 2: EXECUTE TOOL VIA REGISTRY IF APPROVED
-                            result = registry.execute_tool(func_name, args)
+                            # Step 2: Execute Tool
+                            result = registry.execute_tool(func_name, call_args)
+                            reporter.log_action(func_name, call_args, result, status="EXECUTED")
 
-                        # Pass execution result back to conversation context
                         messages.append({
                             "role": "tool",
                             "tool_call_id": tool_call.id,
@@ -93,15 +96,15 @@ def main():
                     
                     continue
 
-                # Print final response from agent
+                # Print response
                 print(f"\n🤖 Agent > {response_message.content}\n")
                 break
 
-        except KeyboardInterrupt:
-            print("\n👋 Session interrupted. Goodbye!")
-            break
-        except Exception as e:
-            print(f"\n❌ Error during execution: {e}\n")
+    except KeyboardInterrupt:
+        print("\n👋 Session interrupted.")
+    finally:
+        # Export final execution reports
+        reporter.export_reports(subscription_id=subscription_id, mode=mode_str)
 
 if __name__ == "__main__":
     main()
