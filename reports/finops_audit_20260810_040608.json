@@ -1,0 +1,122 @@
+{
+  "subscription_id": "3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e",
+  "execution_mode": "DRY-RUN (SAFE)",
+  "timestamp": "2026-08-10T04:06:08.751192Z",
+  "estimated_monthly_savings_usd": 5.2,
+  "audit_trail": [
+    {
+      "timestamp": "2026-08-10T04:04:47.603351Z",
+      "tool": "scan_orphaned_disks",
+      "arguments": {},
+      "status": "EXECUTED",
+      "result": {
+        "status": "success",
+        "count": 1,
+        "data": [
+          {
+            "resource_id": "/subscriptions/3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e/resourceGroups/FINOPSSENTINEL-TEST-RG/providers/Microsoft.Compute/disks/sentinel-orphan-disk-01",
+            "name": "sentinel-orphan-disk-01",
+            "type": "Unattached Managed Disk",
+            "resource_group": "FINOPSSENTINEL-TEST-RG",
+            "size_gb": 32,
+            "location": "southeastasia",
+            "status": "Unattached",
+            "estimated_monthly_cost_usd": 1.6
+          }
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-08-10T04:04:48.650424Z",
+      "tool": "scan_unassigned_public_ips",
+      "arguments": {},
+      "status": "EXECUTED",
+      "result": {
+        "status": "success",
+        "count": 1,
+        "data": [
+          {
+            "resource_id": "/subscriptions/3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e/resourceGroups/FinOpsSentinel-Test-RG/providers/Microsoft.Network/publicIPAddresses/sentinel-orphan-ip-01",
+            "name": "sentinel-orphan-ip-01",
+            "type": "Unassigned Public IP",
+            "resource_group": "FinOpsSentinel-Test-RG",
+            "ip_address": "52.230.39.233",
+            "location": "southeastasia",
+            "status": "Unassociated",
+            "estimated_monthly_cost_usd": 3.6
+          }
+        ]
+      }
+    },
+    {
+      "timestamp": "2026-08-10T04:04:49.176159Z",
+      "tool": "tag_azure_resource",
+      "arguments": {
+        "resource_id": "/subscriptions/3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e/resourceGroups/FinOpsSentinel-Test-RG/providers/Microsoft.Compute/disks/sentinel-orphan-disk-01",
+        "tags": {
+          "FinOpsSentinelStatus": "Orphaned"
+        }
+      },
+      "status": "EXECUTED",
+      "result": {
+        "status": "success",
+        "resource_id": "/subscriptions/3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e/resourceGroups/FinOpsSentinel-Test-RG/providers/Microsoft.Compute/disks/sentinel-orphan-disk-01",
+        "applied_tags": {
+          "FinOpsSentinelStatus": "Orphaned"
+        },
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp": "2026-08-10T04:04:49.176257Z",
+      "tool": "tag_azure_resource",
+      "arguments": {
+        "resource_id": "/subscriptions/3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e/resourceGroups/FinOpsSentinel-Test-RG/providers/Microsoft.Network/publicIPAddresses/sentinel-orphan-ip-01",
+        "tags": {
+          "FinOpsSentinelStatus": "Orphaned"
+        }
+      },
+      "status": "EXECUTED",
+      "result": {
+        "status": "success",
+        "resource_id": "/subscriptions/3231c20c-b3e1-4203-8a28-fc3f9ae5fb6e/resourceGroups/FinOpsSentinel-Test-RG/providers/Microsoft.Network/publicIPAddresses/sentinel-orphan-ip-01",
+        "applied_tags": {
+          "FinOpsSentinelStatus": "Orphaned"
+        },
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp": "2026-08-10T04:05:11.432170Z",
+      "tool": "delete_azure_resource",
+      "arguments": {
+        "resource_group": "FINOPSSENTINEL-TEST-RG",
+        "resource_name": "sentinel-orphan-disk-01",
+        "resource_type": "disk"
+      },
+      "status": "EXECUTED",
+      "result": {
+        "status": "success",
+        "resource_name": "sentinel-orphan-disk-01",
+        "action": "deleted",
+        "dry_run": true
+      }
+    },
+    {
+      "timestamp": "2026-08-10T04:05:19.952207Z",
+      "tool": "delete_azure_resource",
+      "arguments": {
+        "resource_group": "FinOpsSentinel-Test-RG",
+        "resource_name": "sentinel-orphan-ip-01",
+        "resource_type": "public_ip"
+      },
+      "status": "EXECUTED",
+      "result": {
+        "status": "success",
+        "resource_name": "sentinel-orphan-ip-01",
+        "action": "deleted",
+        "dry_run": true
+      }
+    }
+  ]
+}

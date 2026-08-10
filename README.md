@@ -1,117 +1,61 @@
-# FinOpsSentinel 🛡️
-> **An Autonomous AI-Powered Cloud Cost & Orphan Resource Agent**
+# 🛡️ FinOpsSentinel: Autonomous Cloud FinOps & Governance AI Agent
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
-![Azure](https://img.shields.io/badge/Azure-SDK-0078D4.svg)
-![AI Framework](https://img.shields.io/badge/AI-Groq%20%2F%20Llama%203-orange.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Azure SDK](https://img.shields.io/badge/Azure%20SDK-Active-0078D4)
+![LLM Engine](https://img.shields.io/badge/LLM-Llama%203%20%28Groq%29-orange)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-**FinOpsSentinel** is an intelligent, autonomous agent designed to detect, analyze, and safely clean up orphaned cloud infrastructure on Microsoft Azure. By combining cloud telemetry APIs with modern LLM reasoning and function calling, FinOpsSentinel eliminates cloud waste, reduces unattached storage costs, and generates actionable cost optimization reports.
-
----
-
-## 🌟 Key Features
-
-- 🔍 **Automated Resource Scanning:** Periodically scans Azure subscriptions to discover orphaned assets (e.g., unattached managed disks, unassigned public IP addresses, and idle network interfaces).
-- 🧠 **AI-Powered Risk Analysis:** Uses Llama 3 via Groq (or GPT-4o-mini) to evaluate logs, metadata, and tags before recommending deletion.
-- 🛡️ **Built-in Safety Guardrails:** Defaults to `--dry-run` and audit mode to prevent accidental deletion of critical infrastructure.
-- 🛠️ **Function Calling Integration:** Employs structured tool calling to trigger quarantine, tagging, or deletion tasks safely.
-- ⏱️ **Scheduled Execution:** Runs on an automated schedule via Linux `cron` jobs or GitHub Actions workflows.
+**FinOpsSentinel** is an autonomous CLI-based AI agent powered by **Llama 3 (via Groq API)** and native **Azure SDKs**. It scans cloud infrastructure for orphaned and wasteful resources, automatically applies cost-governance tags, enforces strict Human-in-the-Loop (HITL) approval guardrails for destructive actions, and exports audit-ready JSON and Markdown reports.
 
 ---
 
-## 🏗️ Architecture Overview
-```
-┌──────────────────────┐      ┌──────────────────────────┐
-│  Azure Subscription  │ ───► │  Azure Python SDK        │
-│  (Disks, IPs, NICs)  │      │  (Resource Discovery)    │
-└──────────────────────┘      └────────────┬─────────────┘
-                                           │ Raw Metadata
-                                           ▼
-                                ┌──────────────────────┐      ┌──────────────────────────┐
-                                │   FinOpsSentinel     │ ◄─── │  LLM Inference Engine    │
-                                │   Action Executor    │ ───► │  (Groq / Llama 3)        │
-                                └──────────┬───────────┘      └──────────────────────────┘
-                                           │
-                                           ├─► 📄 Markdown Cost & Audit Reports
-                                           └─► 🏷️ Resource Tagging / Safe Quarantine
-```
-
-
-## 🧰 Tech Stack & Tools
-
-- **Language:** Python 3.11+
-- **Cloud Platform:** Microsoft Azure (`azure-identity`, `azure-mgmt-compute`, `azure-mgmt-network`)
-- **AI / LLM:** Groq API / OpenAI API (Llama 3 / GPT-4o-mini)
-- **Environment:** Linux (Ubuntu via GitHub Codespaces)
-- **CI/CD & Automation:** GitHub Actions / Bash Cron
+## 📑 Table of Contents
+- [Architecture & Workflow](#-architecture--workflow)
+- [Key Features](#-key-features)
+- [Prerequisites](#-prerequisites)
+- [Installation & Quickstart](#-installation--quickstart)
+- [Usage Examples](#-usage-examples)
+- [Generated Audit Artifacts](#-generated-audit-artifacts)
+- [5-Day Development Roadmap](#-5-day-development-roadmap)
+- [Multi-Cloud Extensibility](#-multi-cloud-extensibility)
 
 ---
 
-## 🚀 Quickstart Guide
+## 🧱 Architecture & Workflow
 
-### Prerequisites
-
-1. An **Azure Subscription** (e.g., Azure for Students).
-2. A free **Groq API Key** or **OpenAI API Key**.
-3. **Python 3.11+** installed (or launch directly in **GitHub Codespaces**).
+```mermaid
+flowchart TD
+    A[👤 User Terminal Request] --> B[🤖 Llama 3 Agent Engine / Groq API]
+    B --> C{Tool Action Requested}
+    C -- Read / Tag Scan --> D[⚙️ Azure SDK Execution]
+    C -- Destructive / Delete --> E[🚨 HITL Guardrail Interceptor]
+    E -- "Exact 'YES' Confirmation" --> D
+    E -- "Denied / Invalid Input" --> F[❌ Execution Blocked]
+    D --> G[📊 FinOps Reporter Module]
+    F --> G
+    G --> H[📁 reports/audit_latest.json]
+    G --> I[📝 reports/report_latest.md]
 
 ---
 
-### 1. Installation
+## ✨ Key Features
+### Autonomous Tool Selection & Chaining: 
+Llama 3 dynamically decides which tools to execute (scan_orphaned_disks, scan_unassigned_public_ips, tag_azure_resource, delete_azure_resource) based on natural language instructions.
+### Human-in-the-Loop (HITL) Guardrails: 
+Intercepts high-risk operations (e.g., resource deletion) and requires explicit uppercase YES human confirmation before proceeding.
+### Automated Financial Governance: 
+Automatically calculates projected waste and tags orphan resources (FinOpsSentinelStatus: Orphaned, EstimatedMonthlyCostUSD).
+### Audit-Ready Reporting: 
+Generates timestamped JSON audit logs and Markdown executive summaries upon session exit.
+### Safe Execution Modes: 
+Runs in DRY-RUN simulation mode by default, or live remediation mode via the --apply flag.
 
-Clone the repository and install dependencies:
+---
 
-```bash
-git clone [https://github.com/YOUR-USERNAME/FinOpsSentinel.git](https://github.com/YOUR-USERNAME/FinOpsSentinel.git)
-cd FinOpsSentinel
-
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
-```
-### 2. Environment Variables
-
-AZURE_SUBSCRIPTION_ID="your-azure-subscription-id"
-GROQ_API_KEY="your-groq-api-key"
-### 3. Authentication & Execution
-Authenticate with your Azure account via Azure CLI:
-
-```bash
-az login
-```
-Run the FinOpsSentinel scanner in dry-run mode:
-
-```bash
-python main.py --mode audit --dry-run
-```
-## 📊 Sample Report Output
-```JSON
-{
-  "timestamp": "2026-07-21T12:00:00Z",
-  "scanned_resources": 14,
-  "orphaned_count": 2,
-  "estimated_monthly_waste_usd": 42.00,
-  "findings": [
-    {
-      "resource_id": "/subscriptions/.../disks/dev-test-disk-01",
-      "type": "Unattached Managed Disk",
-      "size_gb": 128,
-      "ai_risk_assessment": "LOW",
-      "ai_reasoning": "Disk has been unattached for 45 days and contains no production tags.",
-      "recommended_action": "TAG_FOR_DELETION"
-    }
-  ]
-}
-```
-## 🛣️ Roadmap
-[x] v1.0: Core Azure Scanner for Unattached Disks & Unused Public IPs
-
-[ ] v1.5: LLM Function Calling for automatic resource tagging
-
-[ ] v2.0: Multi-Cloud extension (AWS EBS & GCP Persistent Disk support)
-DRY_RUN=True
-## 📄 License
-
-Distributed under the MIT License. See LICENSE for details.
+## 🧱 Architecture & Workflow
+Before installing FinOpsSentinel, ensure you have:
+1. Python 3.10+ installed on your system.
+2. Azure CLI (az) installed and authenticated (az login).
+  2.1. If your a student can get free Azure student account by registering through your college name or by Free GitHub developer resources for students and teachers
+  ``` https://github.com/settings/education/benefits ```
+3. Groq API Key with access to Llama 3 models.
