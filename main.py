@@ -1,83 +1,100 @@
-import sys
 import json
 import argparse
 import subprocess
-from datetime import datetime, timezone
-from azure_scanner import AzureResourceScanner
 from ai_auditor import FinOpsAIAuditor
-from remediator import AzureRemediator
+from tools import ToolRegistry
 
 def main():
-    parser = argparse.ArgumentParser(description="FinOpsSentinel: Autonomous Cloud AI Agent")
-    parser.add_argument("--apply", action="store_true", help="Execute real remediation actions (default is dry-run mode)")
+    parser = argparse.ArgumentParser(description="FinOpsSentinel: Interactive Autonomous Agent")
+    parser.add_argument("--apply", action="store_true", help="Execute live remediation actions (default is dry-run mode)")
     args = parser.parse_args()
 
     dry_run_mode = not args.apply
 
     print("==================================================")
-    print("🛡️  FinOpsSentinel: Autonomous Cloud AI Agent")
+    print("🛡️  FinOpsSentinel: Interactive Cloud AI Agent")
     print(f"⚙️  Execution Mode: {'[DRY-RUN (SAFE)]' if dry_run_mode else '[LIVE APPLY]'}")
-    print("==================================================\n")
+    print("==================================================")
 
-    # 1. Get Azure Subscription ID
+    # Fetch Subscription ID
     try:
         sub_info = subprocess.check_output("az account show", shell=True)
         subscription_id = json.loads(sub_info)["id"]
-        print(f"🔑 Active Subscription: {subscription_id}")
-    except Exception as e:
-        print("❌ Could not fetch subscription ID. Run 'az login' first.")
+        print(f"🔑 Subscription: {subscription_id}\n")
+    except Exception:
+        print("❌ Could not get active Azure subscription. Run 'az login'.")
         return
 
-    # 2. Scan Azure Resources
-    scanner = AzureResourceScanner(subscription_id=subscription_id)
-    scanned_resources = scanner.scan_all()
-
-    if not scanned_resources:
-        print("🎉 No orphaned resources found in subscription!")
-        return
-
-    # 3. AI Risk Audit
-    print(f"\n🧠 Auditing {len(scanned_resources)} scanned assets with Llama 3...")
+    # Initialize AI Auditor & Tool Registry
     auditor = FinOpsAIAuditor()
-    remediator = AzureRemediator(subscription_id=subscription_id, dry_run=dry_run_mode)
-    
-    audit_findings = []
+    registry = ToolRegistry(subscription_id=subscription_id, dry_run=dry_run_mode)
 
-    for resource in scanned_resources:
-        print(f"\n📌 Resource: {resource['name']} ({resource['type']})")
-        evaluation = auditor.analyze_resource_risk(resource)
-        print(f"   ├─ AI Risk Level: {evaluation.get('risk_level')}")
-        print(f"   ├─ Action: {evaluation.get('recommended_action')}")
-        print(f"   └─ Reasoning: {evaluation.get('reasoning')}")
+    messages = []
+    print("🤖 FinOpsSentinel Ready! Type your request (or 'exit' / 'quit' to stop).\n")
 
-        # 4. Trigger Remediation based on AI Risk
-        if evaluation.get("risk_level") == "LOW":
-            # Tag resource for tracking
-            tag_payload = {
-                "FinOpsSentinelStatus": "Orphaned",
-                "FinOpsSentinelAction": evaluation.get("recommended_action"),
-                "EvaluatedBy": "Llama3-Groq"
-            }
-            remediator.tag_resource(resource["resource_id"], tag_payload)
+    while True:
+        try:
+            user_input = input("👤 You > ").strip()
+            if not user_input:
+                continue
+            if user_input.lower() in ["exit", "quit", "q"]:
+                print("👋 Exiting FinOpsSentinel session.")
+                break
 
-        evaluation["dry_run_executed"] = dry_run_mode
-        audit_findings.append(evaluation)
+            # Append user request to conversation history
+            messages.append({"role": "user", "content": user_input})
 
-    # 5. Save Final Audit Log
-    report = {
-        "project": "FinOpsSentinel",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "dry_run": dry_run_mode,
-        "subscription_id": subscription_id,
-        "total_orphaned_assets": len(audit_findings),
-        "findings": audit_findings
-    }
+            # Process response loop (handles multi-step tool calls)
+            while True:
+                response_message = auditor.run_agent_step(messages)
 
-    with open("finops_audit_report.json", "w") as f:
-        json.dump(report, f, indent=2)
+                # Convert response message object into printable/storable dict format
+                msg_dict = {"role": "assistant"}
+                if response_message.content:
+                    msg_dict["content"] = response_message.content
+                if response_message.tool_calls:
+                    msg_dict["tool_calls"] = [
+                        {
+                            "id": tc.id,
+                            "type": tc.type,
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments
+                            }
+                        } for tc in response_message.tool_calls
+                    ]
+                
+                messages.append(msg_dict)
 
-    print("\n" + "="*50)
-    print("✅ Day 3 Pipeline Complete! Report updated in 'finops_audit_report.json'")
+                # Case A: Model wants to call one or more tools
+                if response_message.tool_calls:
+                    for tool_call in response_message.tool_calls:
+                        func_name = tool_call.function.name
+                        args = json.loads(tool_call.function.arguments)
+
+                        # Execute requested tool via Registry
+                        result = registry.execute_tool(func_name, args)
+
+                        # Append tool execution output back into conversation history
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call.id,
+                            "name": func_name,
+                            "content": json.dumps(result)
+                        })
+                    
+                    # Continue inner loop so Llama 3 reads tool results and decides next step
+                    continue
+
+                # Case B: Model gave a final text answer
+                print(f"\n🤖 Agent > {response_message.content}\n")
+                break
+
+        except KeyboardInterrupt:
+            print("\n👋 Session interrupted. Goodbye!")
+            break
+        except Exception as e:
+            print(f"\n❌ Error during execution: {e}\n")
 
 if __name__ == "__main__":
     main()
