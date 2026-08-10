@@ -1,62 +1,83 @@
+import sys
 import json
+import argparse
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from azure_scanner import AzureResourceScanner
 from ai_auditor import FinOpsAIAuditor
+from remediator import AzureRemediator
 
-def run_finops_sentinel_pipeline():
+def main():
+    parser = argparse.ArgumentParser(description="FinOpsSentinel: Autonomous Cloud AI Agent")
+    parser.add_argument("--apply", action="store_true", help="Execute real remediation actions (default is dry-run mode)")
+    args = parser.parse_args()
+
+    dry_run_mode = not args.apply
+
     print("==================================================")
     print("🛡️  FinOpsSentinel: Autonomous Cloud AI Agent")
+    print(f"⚙️  Execution Mode: {'[DRY-RUN (SAFE)]' if dry_run_mode else '[LIVE APPLY]'}")
     print("==================================================\n")
 
-    # 1. Obtain Azure Subscription ID
+    # 1. Get Azure Subscription ID
     try:
         sub_info = subprocess.check_output("az account show", shell=True)
         subscription_id = json.loads(sub_info)["id"]
         print(f"🔑 Active Subscription: {subscription_id}")
     except Exception as e:
-        print("❌ Could not obtain Azure subscription. Ensure 'az login' is active.")
+        print("❌ Could not fetch subscription ID. Run 'az login' first.")
         return
 
-    # 2. Run Azure Resource Scanner
+    # 2. Scan Azure Resources
     scanner = AzureResourceScanner(subscription_id=subscription_id)
     scanned_resources = scanner.scan_all()
 
     if not scanned_resources:
-        print("🎉 No orphaned resources found in subscription! Cloud is clean.")
+        print("🎉 No orphaned resources found in subscription!")
         return
 
-    # 3. Run AI Risk Auditor on Scanned Assets
-    print(f"\n🧠 Analyzing {len(scanned_resources)} scanned assets with Llama 3...")
+    # 3. AI Risk Audit
+    print(f"\n🧠 Auditing {len(scanned_resources)} scanned assets with Llama 3...")
     auditor = FinOpsAIAuditor()
-    ai_findings = []
+    remediator = AzureRemediator(subscription_id=subscription_id, dry_run=dry_run_mode)
+    
+    audit_findings = []
 
     for resource in scanned_resources:
-        print(f"   └─ Auditing {resource['name']}...")
+        print(f"\n📌 Resource: {resource['name']} ({resource['type']})")
         evaluation = auditor.analyze_resource_risk(resource)
-        ai_findings.append(evaluation)
+        print(f"   ├─ AI Risk Level: {evaluation.get('risk_level')}")
+        print(f"   ├─ Action: {evaluation.get('recommended_action')}")
+        print(f"   └─ Reasoning: {evaluation.get('reasoning')}")
 
-    # 4. Compile Final FinOps Audit Report
-    total_monthly_waste = sum(item.get("estimated_savings_usd", 0) for item in ai_findings)
+        # 4. Trigger Remediation based on AI Risk
+        if evaluation.get("risk_level") == "LOW":
+            # Tag resource for tracking
+            tag_payload = {
+                "FinOpsSentinelStatus": "Orphaned",
+                "FinOpsSentinelAction": evaluation.get("recommended_action"),
+                "EvaluatedBy": "Llama3-Groq"
+            }
+            remediator.tag_resource(resource["resource_id"], tag_payload)
 
+        evaluation["dry_run_executed"] = dry_run_mode
+        audit_findings.append(evaluation)
+
+    # 5. Save Final Audit Log
     report = {
         "project": "FinOpsSentinel",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "dry_run": dry_run_mode,
         "subscription_id": subscription_id,
-        "total_orphaned_assets": len(ai_findings),
-        "total_monthly_waste_usd": round(total_monthly_waste, 2),
-        "audit_findings": ai_findings
+        "total_orphaned_assets": len(audit_findings),
+        "findings": audit_findings
     }
 
-    # Save report to file
     with open("finops_audit_report.json", "w") as f:
         json.dump(report, f, indent=2)
 
     print("\n" + "="*50)
-    print("📊 FINAL FINOPS AUDIT REPORT SUMMARY")
-    print("="*50)
-    print(json.dumps(report, indent=2))
-    print("\n✅ Execution complete! Full report saved to 'finops_audit_report.json'")
+    print("✅ Day 3 Pipeline Complete! Report updated in 'finops_audit_report.json'")
 
 if __name__ == "__main__":
-    run_finops_sentinel_pipeline()
+    main()
