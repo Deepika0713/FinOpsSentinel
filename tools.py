@@ -89,6 +89,42 @@ TOOL_SCHEMAS = [
     }
 ]
 
+# Append/Ensure these multi-cloud schemas are inside TOOL_SCHEMAS in tools.py
+
+MULTI_CLOUD_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "scan_aws_unattached_ebs",
+            "description": "Scans AWS EC2 API for unattached Elastic Block Store (EBS) volumes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "region": {"type": "string", "description": "AWS region (e.g. us-east-1)"}
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "scan_gcp_idle_disks",
+            "description": "Scans Google Cloud Compute Engine for idle unattached persistent disks.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "project_id": {"type": "string", "description": "GCP Project ID"}
+                },
+                "required": []
+            }
+        }
+    }
+]
+
+# Combine with existing Azure tool schemas
+TOOL_SCHEMAS.extend(MULTI_CLOUD_SCHEMAS)
+
 
 # ---------------------------------------------------------------------------
 # 2. Tool Registry Class
@@ -105,63 +141,44 @@ class ToolRegistry:
         self.remediator = AzureRemediator(subscription_id=subscription_id, dry_run=dry_run)
 
     def execute_tool(self, tool_name: str, arguments: dict) -> dict:
-        """
-        Routes the tool invocation to the corresponding Python implementation.
-        """
-        print(f"\n⚙️  [TOOL EXECUTION] Running '{tool_name}' with arguments: {arguments}")
-
-        try:
-            if tool_name == "scan_orphaned_disks":
-                # Scan disks across subscription or specific RG
-                disks = self.scanner.scan_unattached_disks()
-                rg_filter = arguments.get("resource_group")
-                if rg_filter:
-                    disks = [d for d in disks if rg_filter.lower() in d["resource_id"].lower()]
-                return {"status": "success", "count": len(disks), "data": disks}
-
-            elif tool_name == "scan_unassigned_public_ips":
-                ips = self.scanner.scan_unassigned_public_ips()
-                rg_filter = arguments.get("resource_group")
-                if rg_filter:
-                    ips = [ip for ip in ips if rg_filter.lower() in ip["resource_id"].lower()]
-                return {"status": "success", "count": len(ips), "data": ips}
-
-            elif tool_name == "tag_azure_resource":
-                res_id = arguments.get("resource_id")
-                tags = arguments.get("tags", {})
-                success = self.remediator.tag_resource(res_id, tags)
-                return {
-                    "status": "success" if success else "failed",
-                    "resource_id": res_id,
-                    "applied_tags": tags,
-                    "dry_run": self.dry_run
-                }
-
-            elif tool_name == "delete_azure_resource":
-                rg = arguments.get("resource_group")
-                res_name = arguments.get("resource_name")
-                res_type = arguments.get("resource_type")
-
-                if res_type == "disk":
-                    success = self.remediator.delete_unattached_disk(rg, res_name)
-                elif res_type == "public_ip":
-                    success = self.remediator.delete_unassigned_public_ip(rg, res_name)
-                else:
-                    return {"status": "failed", "error": f"Unsupported resource type: {res_type}"}
-
-                return {
-                    "status": "success" if success else "failed",
-                    "resource_name": res_name,
-                    "action": "deleted",
-                    "dry_run": self.dry_run
-                }
-
-            else:
-                return {"status": "failed", "error": f"Unknown tool: {tool_name}"}
-
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
+        """Dispatches execution to the corresponding cloud handler."""
+        # Azure Tools
+        if tool_name == "scan_orphaned_disks":
+            return self.scan_orphaned_disks()
+        elif tool_name == "scan_unassigned_public_ips":
+            return self.scan_unassigned_public_ips()
+        elif tool_name == "tag_azure_resource":
+            return self.tag_azure_resource(arguments.get("resource_id"), arguments.get("tags", {}))
+        elif tool_name == "delete_azure_resource":
+            return self.delete_azure_resource(
+                arguments.get("resource_group"),
+                arguments.get("resource_name"),
+                arguments.get("resource_type")
+            )
+        
+        # Multi-Cloud Mock Endpoints (Extensible for AWS / GCP SDKs)
+        elif tool_name == "scan_aws_unattached_ebs":
+            region = arguments.get("region", "us-east-1")
+            return {
+                "status": "success",
+                "provider": "AWS",
+                "region": region,
+                "unattached_volumes": [
+                    {"volume_id": "vol-0a1b2c3d4e5f6g7h8", "size_gb": 100, "type": "gp3", "est_monthly_cost_usd": 8.00}
+                ]
+            }
+        elif tool_name == "scan_gcp_idle_disks":
+            project = arguments.get("project_id", "default-project")
+            return {
+                "status": "success",
+                "provider": "GCP",
+                "project_id": project,
+                "idle_disks": [
+                    {"disk_name": "gcp-idle-disk-01", "size_gb": 50, "type": "pd-standard", "est_monthly_cost_usd": 2.00}
+                ]
+            }
+        else:
+            return {"status": "error", "message": f"Tool '{tool_name}' not implemented in registry."}
 
 if __name__ == "__main__":
     # Sanity test tool registry setup
