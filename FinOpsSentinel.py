@@ -10,10 +10,10 @@ try:
     from myModule.guardrails import SafetyGuardrailInterceptor
     from myModule.reporter import FinOpsReporter
 except ModuleNotFoundError :
-    print('[WARRNING] Module not found')
+    print('[WARNING] Module not found')
     exit()
 except Exception as e :
-    print(f'[WARRNING] : {e}')
+    print(f'[WARNING] : {e}')
     exit()
 
 BANNER = """
@@ -27,6 +27,11 @@ BANNER = """
              Autonomous Multi-Cloud FinOps & Security AI Agent
 ====================================================================
 """
+
+FinOpsAIAuditor = FinOpsAIAuditor()
+ToolRegistry = ToolRegistry()
+SafetyGuardrailInterceptor = SafetyGuardrailInterceptor()
+FinOpsReporter = FinOpsReporter()
 
 def main():
     parser = argparse.ArgumentParser(
