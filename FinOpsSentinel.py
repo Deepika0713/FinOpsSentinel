@@ -28,11 +28,6 @@ BANNER = """
 ====================================================================
 """
 
-FinOpsAIAuditor = FinOpsAIAuditor()
-ToolRegistry = ToolRegistry()
-SafetyGuardrailInterceptor = SafetyGuardrailInterceptor()
-FinOpsReporter = FinOpsReporter()
-
 def main():
     parser = argparse.ArgumentParser(
         description="FinOpsSentinel: Autonomous Multi-Cloud AI Agent for FinOps & Governance",
