@@ -2,7 +2,7 @@ import os
 import json
 from dotenv import load_dotenv
 from groq import Groq
-from tools import TOOL_SCHEMAS
+from .tools import TOOL_SCHEMAS
 
 load_dotenv()
 
