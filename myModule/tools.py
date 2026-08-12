@@ -1,6 +1,6 @@
 import json
-from azure_scanner import AzureResourceScanner
-from remediator import AzureRemediator
+from .azure_scanner import AzureResourceScanner
+from .remediator import AzureRemediator
 
 # ---------------------------------------------------------------------------
 # 1. Groq / Llama 3 Tool Definitions (JSON Schemas)
