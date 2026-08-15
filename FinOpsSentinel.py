@@ -1,11 +1,20 @@
-import sys
-import json
-import argparse
-import subprocess
-from ai_auditor import FinOpsAIAuditor
-from tools import ToolRegistry
-from guardrails import SafetyGuardrailInterceptor
-from reporter import FinOpsReporter
+# /usr/bin/env python3
+
+try:
+    import sys
+    import json
+    import argparse
+    import subprocess
+    from myModule.ai_auditor import FinOpsAIAuditor
+    from myModule.tools import ToolRegistry
+    from myModule.guardrails import SafetyGuardrailInterceptor
+    from myModule.reporter import FinOpsReporter
+except ModuleNotFoundError :
+    print('[WARNING] Module not found')
+    exit()
+except Exception as e :
+    print(f'[WARNING] : {e}')
+    exit()
 
 BANNER = """
 ====================================================================

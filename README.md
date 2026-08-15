@@ -36,6 +36,7 @@ flowchart TD
     G --> H[📁 reports/audit_latest.json]
     G --> I[📝 reports/report_latest.md]
 
+```
 ---
 
 ## ✨ Key Features
@@ -51,11 +52,15 @@ Generates timestamped JSON audit logs and Markdown executive summaries upon sess
 Runs in DRY-RUN simulation mode by default, or live remediation mode via the --apply flag.
 
 ---
-
 ## 🧱 Architecture & Workflow
 Before installing FinOpsSentinel, ensure you have:
-1. Python 3.10+ installed on your system.
-2. Azure CLI (az) installed and authenticated (az login).
-  2.1. If your a student can get free Azure student account by registering through your college name or by Free GitHub developer resources for students and teachers
-  ``` https://github.com/settings/education/benefits ```
-3. Groq API Key with access to Llama 3 models.
+<ol>
+  <li> Python 3.10+ installed on your system.</li>
+  <li> Azure CLI (az) installed and authenticated (az login).
+  <ol>
+      <li> If you are a student, you can get free Azure student account by registering through your student email id(provided by college) <br>
+      https://github.com/settings/education/benefits</li>
+  </ol>
+  </li>
+  <li> Groq API Key with access to Llama 3 models.</li>
+</ol>
