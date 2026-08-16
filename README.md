@@ -81,8 +81,7 @@ Before installing FinOpsSentinel, ensure you have:
   <li> Python 3.10+ installed on your system.</li>
   <li> Azure CLI (az) installed and authenticated (az login).
   <ol>
-      <li> If you are a student, you can get a free Azure student account by registering at https://azure.microsoft.com/en-us/free/students or through GitHub Developer for Students using your student email ID and college ID card, etc. (provided by your college) <br>
-      https://github.com/settings/education/benefits [GitHub Pages]_(https://pages.github.com/)</li>
+      <li> If you are a student, you can get a free Azure student account by registering at <br>https://azure.microsoft.com/en-us/free/students or through GitHub Developer for Students using your student email ID and college ID card, etc. (provided by your college) https://github.com/settings/education/benefits</li>
   </ol>
   </li>
   <li> Groq API Key with access to Llama 3 models.</li>
@@ -179,4 +178,4 @@ While native Azure SDK support is active, FinOpsSentinel is built with extensibl
 ---
 
 ## 📜 License
-Distributed under the MIT License. See [LICENSE](/LICENSE.md) for more details.
+Distributed under the MIT License. See [LICENSE](/LICENSE) for more details.
