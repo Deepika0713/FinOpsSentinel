@@ -136,6 +136,8 @@ docker run -it --rm \
 ---
 
 ## 💪🏻 Usage Examples
+<img width="1200" height="600" alt="demo" src="https://github.com/user-attachments/assets/85f6bde7-3adf-4f45-a25e-fc869c1c5bf9" />
+
 ---
 
 ## 🧩 Generated Audit Artifacts
@@ -147,14 +149,24 @@ Upon session termination, FinOpsSentinel exports structured audit reports to the
 ## 🗺 Development Roadmap
 The FinOpsSentinel development plan is structured into phased milestones, moving from initial containerized MVP to an enterprise-ready, multi-cloud governance platform.
 ### Phase 1: Core Engine & Single-Cloud Baseline (Completed ✅)
-- [x] Azure Resource Scanner: Detect unattached Public IPs, unattached Managed Disks, and stopped/idle Virtual Machines.
-- [x] LLM Cost Analysis: Generate summaries and estimated savings using Groq / Llama 3.
-- [x] HITL Safety Guardrails: Interactive YES prompt confirmation before applying any destructive CLI modifications.
-- [x] Containerization & CI/CD: Automated Docker builds pushed to Docker Hub via GitHub Actions.
+- [x] **Azure Resource Scanner:** Detect unattached Public IPs, unattached Managed Disks, and stopped/idle Virtual Machines.
+- [x] **LLM Cost Analysis:** Generate summaries and estimated savings using Groq / Llama 3.
+- [x] **HITL Safety Guardrails:** Interactive YES prompt confirmation before applying any destructive CLI modifications.
+- [x] **Containerization & CI/CD:** Automated Docker builds pushed to Docker Hub via GitHub Actions.
 ### Phase 2: State Verification & Extended Asset Coverage (In Progress 🏗️ _TO_DO_)
-- [ ] Post-Remediation Re-Scan (State Flush): Automatically trigger an immediate infrastructure re-audit after remediation to prevent false positives in final reports (finops_audit_report.json and report_latest.md).
-- [ ] Expanded Orphaned Asset Detection:
-      - 
+- [ ] **Post-Remediation Re-Scan (State Flush)**: Automatically trigger an immediate infrastructure re-audit after remediation to prevent false positives in final reports (finops_audit_report.json and report_latest.md).
+- [ ] **Expanded Orphaned Asset Detection:**
+- **Networking:** Unattached Network Interfaces (NICs), unassociated Network Security Groups (NSGs), and unlinked Route Tables.
+- **Compute:** Empty App Service Plans (0 active sites hosted) and unattached VM snapshots older than 90 days.
+- **Database:** Idle Serverless Azure SQL instances.
+- [ ] **Resource Tagging Exclusions:** Skip production assets with explicit exclusion tags (e.g., Environment: Production, DoNotDelete: True).
+- [ ] **Dry-Run Diff Previews:** Output precise resource IDs and proposed deletion commands in terminal prior to asking for HITL approval.
+
+### Phase 3: High-Performance CLI & Multi-Cloud Scaling (Planned 🚀 _TO_DO_)
+- [ ] **Parallel Resource Graph Queries:** Refactor scanner engine using ```concurrent.futures``` and Azure Resource Graph (ARG) Kusto queries for sub-second, multi-subscription scanning.
+- [ ] **Multi-Subscription Auditing:** Iterate across all subscriptions accessible by the active Azure CLI session in a single run.
+- [ ] **Multi-Cloud CLI Engine:** Add detection modules for AWS (unattached EBS volumes, unassociated Elastic IPs) and GCP (idle persistent disks) following the same CLI architecture.
+- [ ] **Automated Alerts:** Send summary reports via Webhooks to Slack, Microsoft Teams, or custom HTTP endpoints upon scan completion.
 ---
 
 ## 🎪 Multi-Cloud Extensibility
