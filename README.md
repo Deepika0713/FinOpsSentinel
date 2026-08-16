@@ -147,7 +147,8 @@ Upon session termination, FinOpsSentinel exports structured audit reports to the
 ---
 
 ## 🗺 Development Roadmap
-The FinOpsSentinel development plan is structured into phased milestones, moving from initial containerized MVP to an enterprise-ready, multi-cloud governance platform.
+The FinOpsSentinel development plan focuses on expanding CLI detection capabilities, optimizing scan performance, and ensuring strict state accuracy—without introducing unnecessary full-stack bloat.
+The FinOpsSentinel roadmap 
 ### Phase 1: Core Engine & Single-Cloud Baseline (Completed ✅)
 - [x] **Azure Resource Scanner:** Detect unattached Public IPs, unattached Managed Disks, and stopped/idle Virtual Machines.
 - [x] **LLM Cost Analysis:** Generate summaries and estimated savings using Groq / Llama 3.
