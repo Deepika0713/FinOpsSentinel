@@ -16,7 +16,7 @@
 - [Installation & Quickstart](#-installation--quickstart)
 - [Usage Examples](#-usage-examples)
 - [Generated Audit Artifacts](#-generated-audit-artifacts)
-- [Development Roadmap](#-5-day-development-roadmap)
+- [Development Roadmap](#-development-roadmap)
 - [Multi-Cloud Extensibility](#-multi-cloud-extensibility)
 
 ---
@@ -45,7 +45,6 @@ FinOpsSentinel/
 │   └── workflows/
 │       └── docker-publish.yml    # GitHub Actions workflow for Docker Hub CI/CD
 ├── reports/                      # Output directory for audit reports
-│   ├── finops_audit_report.json  # Comprehensive audit results
 │   ├── audit_latest.json         # Latest execution scan data
 │   └── report_latest.md          # Generated Markdown summary report
 ├── myModule/
@@ -56,8 +55,9 @@ FinOpsSentinel/
 │   ├── remediator.py             # Cloud resource cleanup & remediation engine
 │   ├── reporter.py               # Report generation logic (Markdown & JSON)
 │   └── tools.py                  # Shared helper utilities   
-├── main.py                       # CLI entry point at root (imports from myModule)
+├── FinOpsSentinel.py             # CLI entry point at root (imports from myModule)
 ├── Dockerfile                    # Container definition file
+├── finops_audit_report.json      # Comprehensive audit results
 ├── .env                          # Local environment variables (API keys, credentials)
 ├── .gitignore                    # Files excluded from Git tracking
 ├── LICENSE                       # Project license file
@@ -82,7 +82,7 @@ Before installing FinOpsSentinel, ensure you have:
   <li> Azure CLI (az) installed and authenticated (az login).
   <ol>
       <li> If you are a student, you can get a free Azure student account by registering at https://azure.microsoft.com/en-us/free/students or through GitHub Developer for Students using your student email ID and college ID card, etc. (provided by your college) <br>
-      https://github.com/settings/education/benefits</li>
+      https://github.com/settings/education/benefits [GitHub Pages]_(https://pages.github.com/)</li>
   </ol>
   </li>
   <li> Groq API Key with access to Llama 3 models.</li>
@@ -105,7 +105,7 @@ Create a .env file in the root directory by copying the example template:
 cp .env.example .env
 ```
 Open .env and add your API keys and Azure details:
-```
+```txt
 GROQ_API_KEY=your_groq_api_key_here
 AZURE_SUBSCRIPTION_ID=your_azure_subscription_id_here
 ```
@@ -135,7 +135,7 @@ docker run -it --rm \
 
 ---
 
-## 💪🏻 Usage Examples
+## 🕹️ Usage Examples
 <img width="1200" height="600" alt="demo" src="https://github.com/user-attachments/assets/85f6bde7-3adf-4f45-a25e-fc869c1c5bf9" />
 
 ---
@@ -179,4 +179,4 @@ While native Azure SDK support is active, FinOpsSentinel is built with extensibl
 ---
 
 ## 📜 License
-Distributed under the MIT License. See ```LICENSE``` for more details.
+Distributed under the MIT License. See [LICENSE](/LICENSE.md) for more details.
