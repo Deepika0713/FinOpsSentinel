@@ -35,44 +35,103 @@ class FinOpsReporter:
     def export_reports(self, subscription_id: str, mode: str):
         """Generates both JSON and Markdown report artifacts."""
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        dry_run = (mode == "DRY-RUN (SAFE)")
+
+        # 1. Trigger an automatic re-scan/state refresh
+        print("[STATUS] Re-scanning infrastructure to confirm state changes...")
+        from .azure_scanner import AzureResourceScanner
+        scanner = AzureResourceScanner(subscription_id=subscription_id)
         
-        # 1. Export JSON Audit Log
-        json_filename = os.path.join(self.output_dir, f"finops_audit_{timestamp_str}.json")
+        live_findings = []
+        try:
+            # Try to scan live Azure infrastructure
+            scanned = scanner.scan_all()
+            for item in scanned:
+                # Map scanned resource to findings schema
+                res_name = item.get("name")
+                res_type = item.get("type")
+                est_cost = item.get("estimated_monthly_cost_usd", 0.0)
+                
+                live_findings.append({
+                    "resource_name": res_name,
+                    "risk_level": "LOW",
+                    "recommended_action": "TAG_FOR_DELETION",
+                    "reasoning": f"The unattached/unassigned {res_type} poses a cost risk.",
+                    "estimated_savings_usd": est_cost,
+                    "dry_run_executed": dry_run
+                })
+        except Exception:
+            # If live scanning fails (e.g. sandbox mode), filter the initial findings file
+            print("[WARNING] Live Azure scan failed (Sandbox Mode). Filtering resolved resources locally...")
+            initial_findings_file = "finops_audit_report.json"
+            initial_findings = []
+            if os.path.isfile(initial_findings_file):
+                try:
+                    with open(initial_findings_file, "r") as f:
+                        initial_data = json.load(f)
+                        initial_findings = initial_data.get("findings", [])
+                except Exception:
+                    pass
+            
+            # Determine which resources were successfully deleted
+            deleted_resources = set()
+            for action in self.audit_log:
+                if action.get("tool") == "delete_azure_resource" and action.get("status") == "EXECUTED":
+                    deleted_resources.add(action.get("arguments", {}).get("resource_name"))
+            
+            # Filter out deleted resources
+            for finding in initial_findings:
+                if finding.get("resource_name") not in deleted_resources:
+                    finding["dry_run_executed"] = dry_run
+                    live_findings.append(finding)
+
+        # 2. Export JSON Audit Logs
         json_data = {
-            "subscription_id": subscription_id,
-            "execution_mode": mode,
+            "project": "FinOpsSentinel",
             "timestamp": datetime.utcnow().isoformat() + "Z",
-            "estimated_monthly_savings_usd": round(self.total_savings_usd, 2),
-            "audit_trail": self.audit_log
+            "dry_run": dry_run,
+            "subscription_id": subscription_id,
+            "total_orphaned_assets": len(live_findings),
+            "findings": live_findings
         }
-        
-        with open(json_filename, "w") as f:
+
+        # Write to finops_audit_report.json in the root
+        with open("finops_audit_report.json", "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=2)
 
-        # Also write to latest JSON pointer
-        with open(os.path.join(self.output_dir, "audit_latest.json"), "w") as f:
+        # Write to reports/finops_audit_report.json
+        with open(os.path.join(self.output_dir, "finops_audit_report.json"), "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=2)
 
-        # 2. Export Markdown Summary Report
+        # Write to audit_latest.json
+        with open(os.path.join(self.output_dir, "audit_latest.json"), "w", encoding="utf-8") as f:
+            json.dump(json_data, f, indent=2)
+
+        # Also write the timestamped version
+        json_filename = os.path.join(self.output_dir, f"finops_audit_{timestamp_str}.json")
+        with open(json_filename, "w", encoding="utf-8") as f:
+            json.dump(json_data, f, indent=2)
+
+        # 3. Export Markdown Summary Report
         md_filename = os.path.join(self.output_dir, f"finops_report_{timestamp_str}.md")
-        md_content = self._generate_markdown(subscription_id, mode)
+        md_content = self._generate_markdown(subscription_id, mode, live_findings)
 
-        with open(md_filename, "w") as f:
+        with open(md_filename, "w", encoding="utf-8") as f:
             f.write(md_content)
 
         # Also write to latest Markdown pointer
-        with open(os.path.join(self.output_dir, "report_latest.md"), "w") as f:
+        with open(os.path.join(self.output_dir, "report_latest.md"), "w", encoding="utf-8") as f:
             f.write(md_content)
 
         print("\n" + "="*50)
-        print("📊 FINOPSSENTINEL REPORT GENERATED")
+        print("[REPORT] FINOPSSENTINEL REPORT GENERATED")
         print("="*50)
-        print(f"📁 JSON Audit Log : {json_filename}")
-        print(f"📝 Markdown Report: {md_filename}")
-        print(f"💰 Estimated Monthly Savings: ${round(self.total_savings_usd, 2)} USD")
+        print(f"  • JSON Audit Log : {json_filename}")
+        print(f"  • Markdown Report: {md_filename}")
+        print(f"  • Estimated Monthly Savings: ${round(self.total_savings_usd, 2)} USD")
         print("="*50 + "\n")
 
-    def _generate_markdown(self, subscription_id: str, mode: str) -> str:
+    def _generate_markdown(self, subscription_id: str, mode: str, live_findings: list) -> str:
         """Helper to build a styled Markdown report."""
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
@@ -85,7 +144,23 @@ class FinOpsReporter:
 
 ---
 
-## 📑 Action Log Details
+## 🔍 Live Findings (Remaining Active Issues: {len(live_findings)})
+
+"""
+        if not live_findings:
+            md += "*No active orphaned assets remaining! Infrastructure is clean.*\n\n"
+        else:
+            md += "| Resource Name | Risk Level | Recommended Action | Estimated Savings |\n"
+            md += "| :--- | :--- | :--- | :--- |\n"
+            for finding in live_findings:
+                name = finding.get("resource_name")
+                risk = finding.get("risk_level")
+                action = finding.get("recommended_action")
+                savings = finding.get("estimated_savings_usd", 0.0)
+                md += f"| `{name}` | `{risk}` | `{action}` | `${savings:.2f} USD` |\n"
+            md += "\n"
+
+        md += """## 📑 Action Log Details
 
 | Timestamp (UTC) | Tool Name | Target Resource / Arguments | Execution Status |
 | :--- | :--- | :--- | :--- |

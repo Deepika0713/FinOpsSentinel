@@ -144,17 +144,23 @@ class ToolRegistry:
         """Dispatches execution to the corresponding cloud handler."""
         # Azure Tools
         if tool_name == "scan_orphaned_disks":
-            return self.scan_orphaned_disks()
+            return self.scanner.scan_unattached_disks()
         elif tool_name == "scan_unassigned_public_ips":
-            return self.scan_unassigned_public_ips()
+            return self.scanner.scan_unassigned_public_ips()
         elif tool_name == "tag_azure_resource":
-            return self.tag_azure_resource(arguments.get("resource_id"), arguments.get("tags", {}))
+            success = self.remediator.tag_resource(arguments.get("resource_id"), arguments.get("tags", {}))
+            return {"status": "success" if success else "error"}
         elif tool_name == "delete_azure_resource":
-            return self.delete_azure_resource(
-                arguments.get("resource_group"),
-                arguments.get("resource_name"),
-                arguments.get("resource_type")
-            )
+            res_group = arguments.get("resource_group")
+            res_name = arguments.get("resource_name")
+            res_type = arguments.get("resource_type")
+            if res_type == "disk":
+                success = self.remediator.delete_unattached_disk(res_group, res_name)
+            elif res_type == "public_ip":
+                success = self.remediator.delete_unassigned_public_ip(res_group, res_name)
+            else:
+                return {"status": "error", "message": f"Unknown resource type: {res_type}"}
+            return {"status": "success" if success else "error"}
         
         # Multi-Cloud Mock Endpoints (Extensible for AWS / GCP SDKs)
         elif tool_name == "scan_aws_unattached_ebs":
