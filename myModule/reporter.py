@@ -31,6 +31,10 @@ class FinOpsReporter:
                 self.total_savings_usd += 1.60  # Default benchmark cost for test disks
             elif res_type == "public_ip":
                 self.total_savings_usd += 3.60  # Default benchmark cost for unassigned IPs
+            elif res_type == "app_service_plan":
+                self.total_savings_usd += 19.20
+            elif res_type == "snapshot":
+                self.total_savings_usd += 0.80
 
     def export_reports(self, subscription_id: str, mode: str):
         """Generates both JSON and Markdown report artifacts."""
@@ -52,11 +56,18 @@ class FinOpsReporter:
                 res_type = item.get("type")
                 est_cost = item.get("estimated_monthly_cost_usd", 0.0)
                 
+                if res_type == "AppServicePlan":
+                    reasoning = f"The empty App Service Plan '{res_name}' hosts 0 active sites, incurring unnecessary paid tier capacity costs."
+                elif res_type == "Snapshot":
+                    reasoning = f"The aged disk snapshot '{res_name}' is older than 90 days, accumulating long-term storage costs."
+                else:
+                    reasoning = f"The unattached/unassigned {res_type} poses a cost risk."
+                
                 live_findings.append({
                     "resource_name": res_name,
                     "risk_level": "LOW",
                     "recommended_action": "TAG_FOR_DELETION",
-                    "reasoning": f"The unattached/unassigned {res_type} poses a cost risk.",
+                    "reasoning": reasoning,
                     "estimated_savings_usd": est_cost,
                     "dry_run_executed": dry_run
                 })

@@ -4,6 +4,7 @@ import subprocess
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.web import WebSiteManagementClient
 
 class AzureResourceScanner:
     """
@@ -19,6 +20,7 @@ class AzureResourceScanner:
         # Initialize Azure SDK Management Clients
         self.compute_client = ComputeManagementClient(self.credential, self.subscription_id)
         self.network_client = NetworkManagementClient(self.credential, self.subscription_id)
+        self.web_client = WebSiteManagementClient(self.credential, self.subscription_id)
 
     def scan_unattached_disks(self):
         """Discovers managed disks where managed_by is None."""
@@ -71,11 +73,62 @@ class AzureResourceScanner:
                 
         return orphaned_ips
 
+    def scan_empty_app_service_plans(self, web_client=None):
+        """Discovers App Service Plans with 0 hosted web apps on paid tiers."""
+        print("🔍 Scanning Azure Web API for empty App Service Plans...")
+        orphaned_plans = []
+        client = web_client or self.web_client
+        
+        plans = client.app_service_plans.list()
+        for plan in plans:
+            has_paid_sku = plan.sku and plan.sku.tier and plan.sku.tier.lower() != "free"
+            if plan.number_of_sites == 0 and has_paid_sku:
+                resource_group = plan.id.split("/")[4] if "/" in plan.id else "Unknown"
+                orphaned_plans.append({
+                    "resource_id": plan.id,
+                    "name": plan.name,
+                    "type": "AppServicePlan",
+                    "resource_group": resource_group,
+                    "location": plan.location,
+                    "status": "Empty",
+                    "estimated_monthly_cost_usd": 19.20
+                })
+        return orphaned_plans
+
+    def scan_aged_snapshots(self, compute_client=None, max_age_days=90):
+        """Discovers VM snapshots older than max_age_days."""
+        print("🔍 Scanning Azure Compute API for aged VM Snapshots...")
+        orphaned_snapshots = []
+        client = compute_client or self.compute_client
+        
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        
+        snapshots = client.snapshots.list()
+        for snapshot in snapshots:
+            if snapshot.time_created:
+                age_days = (now - snapshot.time_created).days
+                if age_days > max_age_days:
+                    resource_group = snapshot.id.split("/")[4] if "/" in snapshot.id else "Unknown"
+                    estimated_cost = round((snapshot.disk_size_gb or 0) * 0.05, 2)
+                    orphaned_snapshots.append({
+                        "resource_id": snapshot.id,
+                        "name": snapshot.name,
+                        "type": "Snapshot",
+                        "resource_group": resource_group,
+                        "location": snapshot.location,
+                        "status": "Aged",
+                        "estimated_monthly_cost_usd": estimated_cost
+                    })
+        return orphaned_snapshots
+
     def scan_all(self):
         """Executes a full scan across all supported resource types."""
         disks = self.scan_unattached_disks()
         ips = self.scan_unassigned_public_ips()
-        return disks + ips
+        plans = self.scan_empty_app_service_plans()
+        snapshots = self.scan_aged_snapshots()
+        return disks + ips + plans + snapshots
 
 if __name__ == "__main__":
     # Helper to automatically retrieve Subscription ID from active Azure CLI session
