@@ -4,6 +4,8 @@ import subprocess
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.sql import SqlManagementClient
+from azure.monitor.querymetrics import MetricsClient
 
 class AzureResourceScanner:
     """
@@ -19,6 +21,8 @@ class AzureResourceScanner:
         # Initialize Azure SDK Management Clients
         self.compute_client = ComputeManagementClient(self.credential, self.subscription_id)
         self.network_client = NetworkManagementClient(self.credential, self.subscription_id)
+        self.sql_client = SqlManagementClient(self.credential, self.subscription_id)
+        self.monitor_client = MetricsClient("https://global.metrics.monitor.azure.com", self.credential)
 
     def scan_unattached_disks(self):
         """Discovers managed disks where managed_by is None."""
@@ -71,11 +75,67 @@ class AzureResourceScanner:
                 
         return orphaned_ips
 
+    def scan_idle_sql_databases(self, sql_client=None, monitor_client=None):
+        """Discovers SQL databases with low or zero CPU/DTU usage over the past 7 days."""
+        print("🔍 Scanning Azure SQL API for idle databases...")
+        idle_dbs = []
+        s_client = sql_client or self.sql_client
+        m_client = monitor_client or self.monitor_client
+        
+        from datetime import datetime, timezone, timedelta
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(days=7)
+        
+        try:
+            servers = s_client.servers.list()
+            for server in servers:
+                resource_group = server.id.split("/")[4] if "/" in server.id else "Unknown"
+                databases = s_client.databases.list_by_server(resource_group, server.name)
+                for db in databases:
+                    if db.name.lower() == "master":
+                        continue
+                        
+                    cpu_avg = 0.0
+                    dtu_avg = 0.0
+                    try:
+                        metrics_response = m_client.query_resource(
+                            db.id,
+                            metric_names=["cpu_percent", "dtu_consumption_percent"],
+                            timespan=(start_time, end_time)
+                        )
+                        for metric in metrics_response.metrics:
+                            if metric.name == "cpu_percent" and metric.timeseries:
+                                vals = [v.average for v in metric.timeseries[0].data if v.average is not None]
+                                cpu_avg = sum(vals) / len(vals) if vals else 0.0
+                            elif metric.name == "dtu_consumption_percent" and metric.timeseries:
+                                vals = [v.average for v in metric.timeseries[0].data if v.average is not None]
+                                dtu_avg = sum(vals) / len(vals) if vals else 0.0
+                    except Exception as e:
+                        print(f"    ⚠️ Could not query metrics for DB {db.name}: {e}")
+                        cpu_avg = 0.0
+                        dtu_avg = 0.0
+                        
+                    if cpu_avg < 1.0 and dtu_avg < 1.0:
+                        idle_dbs.append({
+                            "resource_id": db.id,
+                            "name": db.name,
+                            "type": "SqlDatabase",
+                            "resource_group": resource_group,
+                            "location": db.location,
+                            "status": "Idle / Low Usage",
+                            "estimated_monthly_cost_usd": 15.00
+                        })
+        except Exception as e:
+            print(f"❌ Error scanning SQL databases: {e}")
+            
+        return idle_dbs
+
     def scan_all(self):
         """Executes a full scan across all supported resource types."""
         disks = self.scan_unattached_disks()
         ips = self.scan_unassigned_public_ips()
-        return disks + ips
+        dbs = self.scan_idle_sql_databases()
+        return disks + ips + dbs
 
 if __name__ == "__main__":
     # Helper to automatically retrieve Subscription ID from active Azure CLI session
