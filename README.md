@@ -154,7 +154,7 @@ The FinOpsSentinel roadmap
 - [x] **HITL Safety Guardrails:** Interactive YES prompt confirmation before applying any destructive CLI modifications.
 - [x] **Containerization & CI/CD:** Automated Docker builds pushed to Docker Hub via GitHub Actions.
 ### Phase 2: State Verification & Extended Asset Coverage (In Progress 🏗️ _TO_DO_)
-- [ ] **Post-Remediation Re-Scan (State Flush)**: Automatically trigger an immediate infrastructure re-audit after remediation to prevent false positives in final reports (finops_audit_report.json and report_latest.md).
+- [x] **Post-Remediation Re-Scan (State Flush)**: Automatically trigger an immediate infrastructure re-audit after remediation to prevent false positives in final reports (finops_audit_report.json and report_latest.md).
 - [ ] **Expanded Orphaned Asset Detection:**
 - **Networking:** Unattached Network Interfaces (NICs), unassociated Network Security Groups (NSGs), and unlinked Route Tables.
 - **Compute:** Empty App Service Plans (0 active sites hosted) and unattached VM snapshots older than 90 days.
