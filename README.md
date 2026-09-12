@@ -123,17 +123,15 @@ You can run the application using the Docker CLI.
 ```
 docker run -it --rm \
   --env-file .env \
-  -v ~/.azure:/root/.azure \
   -v $(pwd)/reports:/app/reports \
- ${DOCKERHUB_USERNAME}/finops-sentinel:latest
+  ${DOCKERHUB_USERNAME}/finops-sentinel:latest
 ```
 - Live Mode (Scan with HITL Remediation):
 ```
 docker run -it --rm \
   --env-file .env \
-  -v ~/.azure:/root/.azure \
   -v $(pwd)/reports:/app/reports \
- ${DOCKERHUB_USERNAME}/finops-sentinel:latest --apply
+  ${DOCKERHUB_USERNAME}/finops-sentinel:latest --apply
 ```
 
 ---

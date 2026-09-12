@@ -47,7 +47,7 @@ def main():
     print(f"🔒 Safety Guardrails: [ACTIVE - HITL ENABLED]")
 
     # Resolve the subscription without requiring Azure CLI inside the container.
-    subscription_id = os.getenv("AZURE_SUBSCRIPTION_ID")
+    subscription_id = (os.getenv("AZURE_SUBSCRIPTION_ID") or "").strip()
     if subscription_id:
         print(f"🔑 Configured Azure Sub : {subscription_id}\n")
     elif shutil.which("az"):
