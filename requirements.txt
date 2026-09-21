@@ -1,5 +1,7 @@
 azure-identity
 azure-mgmt-compute
 azure-mgmt-network
+azure-mgmt-web
 groq
 python-dotenv
+
