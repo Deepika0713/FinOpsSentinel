@@ -3,6 +3,10 @@ name: Junie PR Review
 on:
   pull_request:
     types: [opened, synchronize]
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
 
 jobs:
   junie-review:
@@ -19,4 +23,4 @@ jobs:
         uses: JetBrains/junie-github-action@v1
         with:
           junie_api_key: ${{ secrets.JUNIE_API_KEY }}
-          prompt: "Please conduct a thorough code review of this pull request. Check for bugs, security risks, and logic errors, and post inline comments with recommendations."
+          prompt: "Please conduct a thorough code review of this pull request. Check for bugs, security risks, and logic errors, and post inline comments with recommendations. And finally give it's everything right with this pr or not!"
