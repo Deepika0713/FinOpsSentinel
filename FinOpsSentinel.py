@@ -4,6 +4,8 @@ try:
     import sys
     import json
     import argparse
+    import os
+    import shutil
     import subprocess
     from myModule.ai_auditor import FinOpsAIAuditor
     from myModule.tools import ToolRegistry
@@ -44,13 +46,30 @@ def main():
     print(f"⚙️  Execution Mode  : [{mode_str}]")
     print(f"🔒 Safety Guardrails: [ACTIVE - HITL ENABLED]")
 
-    # Fetch Active Azure Subscription ID
-    try:
-        sub_info = subprocess.check_output("az account show", shell=True)
-        subscription_id = json.loads(sub_info)["id"]
-        print(f"🔑 Active Azure Sub : {subscription_id}\n")
-    except Exception:
-        print("⚠️  Azure CLI not logged in. Running in Multi-Cloud Sandbox Mode.\n")
+    # Resolve the subscription without requiring Azure CLI inside the container.
+    subscription_id = (os.getenv("AZURE_SUBSCRIPTION_ID") or "").strip()
+    if subscription_id:
+        print(f"🔑 Configured Azure Sub : {subscription_id}\n")
+    elif shutil.which("az"):
+        try:
+            completed = subprocess.run(
+                ["az", "account", "show", "--query", "id", "--output", "tsv"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            subscription_id = completed.stdout.strip()
+            if subscription_id:
+                print(f"🔑 Active Azure Sub : {subscription_id}\n")
+        except (OSError, subprocess.CalledProcessError):
+            subscription_id = None
+
+    if not subscription_id:
+        if args.apply:
+            parser.error(
+                "AZURE_SUBSCRIPTION_ID is required for --apply when Azure CLI is unavailable or not authenticated"
+            )
+        print("⚠️  Azure subscription is not configured; dry-run starts in local sandbox mode.\n")
         subscription_id = "sandbox-sub-0000"
 
     auditor = FinOpsAIAuditor()
