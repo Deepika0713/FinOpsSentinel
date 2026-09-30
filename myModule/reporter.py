@@ -31,6 +31,12 @@ class FinOpsReporter:
                 self.total_savings_usd += 1.60  # Default benchmark cost for test disks
             elif res_type == "public_ip":
                 self.total_savings_usd += 3.60  # Default benchmark cost for unassigned IPs
+            elif res_type == "nic":
+                self.total_savings_usd += 0.00  # NICs do not have standalone direct costs
+            elif res_type == "nsg":
+                self.total_savings_usd += 0.00  # NSGs do not have standalone direct costs
+            elif res_type == "route_table":
+                self.total_savings_usd += 0.00  # Route tables do not have standalone direct costs
 
     def export_reports(self, subscription_id: str, mode: str):
         """Generates both JSON and Markdown report artifacts."""
@@ -52,11 +58,20 @@ class FinOpsReporter:
                 res_type = item.get("type")
                 est_cost = item.get("estimated_monthly_cost_usd", 0.0)
                 
+                if res_type == "NetworkInterface":
+                    reasoning = f"The unattached network interface '{res_name}' poses a security and hygiene risk."
+                elif res_type == "NetworkSecurityGroup":
+                    reasoning = f"The unassociated network security group '{res_name}' is detached from all subnets and interfaces."
+                elif res_type == "RouteTable":
+                    reasoning = f"The unlinked route table '{res_name}' is not associated with any subnets."
+                else:
+                    reasoning = f"The unattached/unassigned {res_type} poses a cost risk."
+                
                 live_findings.append({
                     "resource_name": res_name,
                     "risk_level": "LOW",
                     "recommended_action": "TAG_FOR_DELETION",
-                    "reasoning": f"The unattached/unassigned {res_type} poses a cost risk.",
+                    "reasoning": reasoning,
                     "estimated_savings_usd": est_cost,
                     "dry_run_executed": dry_run
                 })

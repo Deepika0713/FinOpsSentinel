@@ -71,11 +71,80 @@ class AzureResourceScanner:
                 
         return orphaned_ips
 
+    def scan_unattached_nics(self, network_client=None):
+        """Discovers Network Interfaces where virtual_machine is None."""
+        print("🔍 Scanning Azure Network API for unattached Network Interfaces...")
+        orphaned_nics = []
+        client = network_client or self.network_client
+        
+        nics = client.network_interfaces.list_all()
+        for nic in nics:
+            if nic.virtual_machine is None:
+                resource_group = nic.id.split("/")[4] if "/" in nic.id else "Unknown"
+                orphaned_nics.append({
+                    "resource_id": nic.id,
+                    "name": nic.name,
+                    "type": "NetworkInterface",
+                    "resource_group": resource_group,
+                    "location": nic.location,
+                    "status": "Unattached",
+                    "estimated_monthly_cost_usd": 0.0
+                })
+        return orphaned_nics
+
+    def scan_unassociated_nsgs(self, network_client=None):
+        """Discovers Network Security Groups detached from all Subnets and NICs."""
+        print("🔍 Scanning Azure Network API for unassociated Network Security Groups...")
+        orphaned_nsgs = []
+        client = network_client or self.network_client
+        
+        nsgs = client.network_security_groups.list_all()
+        for nsg in nsgs:
+            subnets = nsg.subnets if nsg.subnets else []
+            network_interfaces = nsg.network_interfaces if nsg.network_interfaces else []
+            if len(subnets) == 0 and len(network_interfaces) == 0:
+                resource_group = nsg.id.split("/")[4] if "/" in nsg.id else "Unknown"
+                orphaned_nsgs.append({
+                    "resource_id": nsg.id,
+                    "name": nsg.name,
+                    "type": "NetworkSecurityGroup",
+                    "resource_group": resource_group,
+                    "location": nsg.location,
+                    "status": "Unassociated",
+                    "estimated_monthly_cost_usd": 0.0
+                })
+        return orphaned_nsgs
+
+    def scan_unlinked_route_tables(self, network_client=None):
+        """Discovers Route Tables not linked to any active Subnet."""
+        print("🔍 Scanning Azure Network API for unlinked Route Tables...")
+        orphaned_route_tables = []
+        client = network_client or self.network_client
+        
+        route_tables = client.route_tables.list_all()
+        for rt in route_tables:
+            subnets = rt.subnets if rt.subnets else []
+            if len(subnets) == 0:
+                resource_group = rt.id.split("/")[4] if "/" in rt.id else "Unknown"
+                orphaned_route_tables.append({
+                    "resource_id": rt.id,
+                    "name": rt.name,
+                    "type": "RouteTable",
+                    "resource_group": resource_group,
+                    "location": rt.location,
+                    "status": "Unlinked",
+                    "estimated_monthly_cost_usd": 0.0
+                })
+        return orphaned_route_tables
+
     def scan_all(self):
         """Executes a full scan across all supported resource types."""
         disks = self.scan_unattached_disks()
         ips = self.scan_unassigned_public_ips()
-        return disks + ips
+        nics = self.scan_unattached_nics()
+        nsgs = self.scan_unassociated_nsgs()
+        route_tables = self.scan_unlinked_route_tables()
+        return disks + ips + nics + nsgs + route_tables
 
 if __name__ == "__main__":
     # Helper to automatically retrieve Subscription ID from active Azure CLI session
