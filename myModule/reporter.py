@@ -31,6 +31,8 @@ class FinOpsReporter:
                 self.total_savings_usd += 1.60  # Default benchmark cost for test disks
             elif res_type == "public_ip":
                 self.total_savings_usd += 3.60  # Default benchmark cost for unassigned IPs
+            elif res_type == "sql_database":
+                self.total_savings_usd += 15.00
 
     def export_reports(self, subscription_id: str, mode: str):
         """Generates both JSON and Markdown report artifacts."""
@@ -52,11 +54,16 @@ class FinOpsReporter:
                 res_type = item.get("type")
                 est_cost = item.get("estimated_monthly_cost_usd", 0.0)
                 
+                if res_type == "SqlDatabase":
+                    reasoning = f"The SQL database '{res_name}' has been idle/unused with <1% CPU/DTU usage over the past 7 days."
+                else:
+                    reasoning = f"The unattached/unassigned {res_type} poses a cost risk."
+                
                 live_findings.append({
                     "resource_name": res_name,
                     "risk_level": "LOW",
                     "recommended_action": "TAG_FOR_DELETION",
-                    "reasoning": f"The unattached/unassigned {res_type} poses a cost risk.",
+                    "reasoning": reasoning,
                     "estimated_savings_usd": est_cost,
                     "dry_run_executed": dry_run
                 })
