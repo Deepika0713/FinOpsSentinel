@@ -1,0 +1,28 @@
+name: Junie PR Review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
+
+jobs:
+  junie-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Run Junie Code Review
+        uses: JetBrains/junie-github-action@v1
+        with:
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          prompt: "Please conduct a thorough code review of this pull request. Check for bugs, security risks, and logic errors, and post inline comments with recommendations. And finally give it's everything right with this pr or not!"
