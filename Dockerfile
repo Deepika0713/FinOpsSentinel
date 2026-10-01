@@ -25,5 +25,5 @@ COPY . .
 # Create directory for audit reports
 RUN mkdir -p /app/reports
 
-# Set entry point to run main.py
-ENTRYPOINT ["python", "main.py"]
+# Run the repository's CLI entrypoint.
+ENTRYPOINT ["python", "FinOpsSentinel.py"]

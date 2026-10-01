@@ -93,12 +93,12 @@ Before installing FinOpsSentinel, ensure you have:
 ### Step 1: Clone the Repository
 
 ```
-git clone https://github.com/07deepika/FinOpsSentinel.git
+git clone https://github.com/Deepika0713/FinOpsSentinel.git
 cd FinOpsSentinel
 ```
 
 ### Step 2: Environment Configuration
-Create a .env file in the root directory by copying the example template:
+Create a `.env` file in the root directory by copying the example template. The template contains placeholders only; replace them with your own values:
 
 ```
 cp .env.example .env
@@ -109,27 +109,29 @@ GROQ_API_KEY=your_groq_api_key_here
 AZURE_SUBSCRIPTION_ID=your_azure_subscription_id_here
 ```
 ### Step 3: Authenticate with Azure
-Ensure your host machine is authenticated with Azure so the container can access your credentials:
+Authenticate with Azure using `az login` for local runs, or provide `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_CLIENT_SECRET` for non-interactive Docker runs. `AZURE_SUBSCRIPTION_ID` must be set for live `--apply` execution.
 ```
 az login
 ```
 ### Step 4: Run FinOpsSentinel
+Set the Docker Hub namespace used by the published image before running the container:
+```
+export DOCKERHUB_USERNAME=your-dockerhub-username
+```
 You can run the application using the Docker CLI.
 - Dry-Run Mode (Safe Scan):
 ```
 docker run -it --rm \
   --env-file .env \
-  -v ~/.azure:/root/.azure \
   -v $(pwd)/reports:/app/reports \
-  07deepika/finops-sentinel:latest
+  ${DOCKERHUB_USERNAME}/finops-sentinel:latest
 ```
 - Live Mode (Scan with HITL Remediation):
 ```
 docker run -it --rm \
   --env-file .env \
-  -v ~/.azure:/root/.azure \
   -v $(pwd)/reports:/app/reports \
-  07deepika/finops-sentinel:latest --apply
+  ${DOCKERHUB_USERNAME}/finops-sentinel:latest --apply
 ```
 
 ---
